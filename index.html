@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyHub - Student Management System</title>
+    <link rel="stylesheet" href="enhanced-style.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>StudyHub</h2>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-btn active" data-section="dashboard">Home</button>
+                <button class="nav-btn" data-section="classes">Classes</button>
+                <button class="nav-btn auth-required" data-section="students" style="display: none;">Students</button>
+                <button class="nav-btn auth-required" data-section="attendance" style="display: none;">Attendance</button>
+                <button class="nav-btn auth-required" data-section="payments" style="display: none;">Payments</button>
+                <button class="nav-btn auth-only" data-section="signin" id="signin-nav">Sign In</button>
+                <button class="nav-btn auth-only" data-section="signup" id="signup-nav">Sign Up</button>
+                <button class="nav-btn auth-required" onclick="logout()" id="logout-nav" style="display: none;">Logout</button>
+                <button class="nav-btn auth-required" onclick="window.open('index2.html', '_blank')" style="display: none;">Version 2</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Auth Status Banner -->
+    <div id="auth-banner" class="auth-banner" style="display: none;">
+        <div class="container">
+            <p>Welcome back, <span id="user-email"></span>! You have full access to all features.</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p>Welcome to your student management system</p>
+                    </div>
+                </div>
+                
+                <div id="public-view">
+                    <div class="auth-prompt">
+                        <h2>Sign in to access full features</h2>
+                        <p>Create an account or sign in to manage students, classes, attendance, and payments.</p>
+                        <div class="auth-buttons">
+                            <button class="btn btn--primary" onclick="showSection('signin')">Sign In</button>
+                            <button class="btn btn--secondary" onclick="showSection('signup')">Sign Up</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="authenticated-view" style="display: none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <h3 id="total-students">0</h3>
+                                <p>Total Students</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3 id="monthly-income">₹0</h3>
+                                <p>Monthly Income</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📚</div>
+                            <div class="stat-content">
+                                <h3 id="active-classes">0</h3>
+                                <p>Active Classes</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <h3 id="attendance-rate">0%</h3>
+                                <p>Attendance Rate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <h2>Quick Actions</h2>
+                        <div class="action-buttons">
+                            <button class="btn btn--primary" onclick="showSection('students')">Manage Students</button>
+                            <button class="btn btn--primary" onclick="showSection('attendance')">Mark Attendance</button>
+                            <button class="btn btn--primary" onclick="showSection('payments')">Record Payment</button>
+                            <button class="btn btn--secondary" onclick="openModal('addStudentModal')">Add New Student</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Students Section -->
+        <section id="students" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <h1>Students</h1>
+                        <p>Manage your student database</p>
+                    </div>
+                    <button class="btn btn--primary" onclick="openModal('addStudentModal')">Add Student</button>
+                </div>
+                
+                <div class="filters">
+                    <input type="text" id="student-search" placeholder="Search students..." class="form-control">
+                    <select id="grade-filter" class="form-control">
+                        <option value="">All Grades</option>
+                        <option value="6">Grade 6</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                    </select>
+                </div>
+
+                <div id="students-grid" class="students-grid"></div>
+            </div>
+        </section>
+
+        <!-- Classes Section -->
+        <section id="classes" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <h1>Classes</h1>
+                        <p>Manage class information and fees</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn--secondary auth-required" onclick="openModal('addClassModal')" style="display: none;">Add Class</button>
+                    </div>
+                </div>
+                
+                <div id="classes-grid" class="classes-grid"></div>
+            </div>
+        </section>
+
+        <!-- Enhanced Attendance Section -->
+        <section id="attendance" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <h1>Attendance Management</h1>
+                        <p>Track and manage student attendance</p>
+                    </div>
+                </div>
+
+                <!-- Attendance Controls -->
+                <div class="attendance-controls">
+                    <input type="date" id="attendanceDate" class="form-control" required>
+                    <select id="attendanceGrade" class="form-control">
+                        <option value="">Select Grade</option>
+                        <option value="6">Grade 6</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                    </select>
+                    <button class="btn btn--primary" onclick="loadAttendance()">Load Attendance</button>
+                </div>
+
+                <!-- Attendance Display -->
+                <div id="attendance-display" class="attendance-display">
+                    <div class="attendance-header">
+                        <h3>Today's Attendance</h3>
+                        <p>Select a date and grade to view attendance records</p>
+                    </div>
+                    
+                    <!-- Attendance Table -->
+                    <div class="attendance-table-container">
+                        <table id="attendanceTable" class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Grade</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payments Section -->
+        <section id="payments" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <h1>Payments</h1>
+                        <p>Track and record student payments</p>
+                    </div>
+                    <button class="btn btn--primary" onclick="openModal('addPaymentModal')">Record Payment</button>
+                </div>
+                
+                <div id="payments-grid" class="payments-grid"></div>
+            </div>
+        </section>
+
+        <!-- Sign In Section -->
+        <section id="signin" class="section">
+            <div class="container">
+                <div class="auth-form">
+                    <h2>Sign In</h2>
+                    <form id="signin-form">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--full-width">Sign In</button>
+                    </form>
+                    <p class="auth-switch">Don't have an account? <a href="#" onclick="showSection('signup')">Sign up here</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sign Up Section -->
+        <section id="signup" class="section">
+            <div class="container">
+                <div class="auth-form">
+                    <h2>Sign Up</h2>
+                    <form id="signup-form">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="fullName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" name="confirmPassword" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--full-width">Sign Up</button>
+                    </form>
+                    <p class="auth-switch">Already have an account? <a href="#" onclick="showSection('signin')">Sign in here</a></p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Student</h3>
+                <button class="modal-close" onclick="closeModal('addStudentModal')">&times;</button>
+            </div>
+            <form id="addStudentForm">
+                <div class="form-group">
+                    <label class="form-label">Student Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade</label>
+                    <select name="grade" class="form-control" required>
+                        <option value="">Select Grade</option>
+                        <option value="6">Grade 6</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Info</label>
+                    <input type="text" name="contact_info" class="form-control" placeholder="Phone number or email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fee Type</label>
+                    <select name="fee_type" class="form-control" required>
+                        <option value="">Select Fee Type</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('addStudentModal')">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Add Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Student</h3>
+                <button class="modal-close" onclick="closeModal('editStudentModal')">&times;</button>
+            </div>
+            <form id="editStudentForm">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label class="form-label">Student Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade</label>
+                    <select name="grade" class="form-control" required>
+                        <option value="">Select Grade</option>
+                        <option value="6">Grade 6</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Info</label>
+                    <input type="text" name="contact_info" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fee Type</label>
+                    <select name="fee_type" class="form-control" required>
+                        <option value="">Select Fee Type</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Update Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Class Modal -->
+    <div id="addClassModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Class</h3>
+                <button class="modal-close" onclick="closeModal('addClassModal')">&times;</button>
+            </div>
+            <form id="addClassForm">
+                <div class="form-group">
+                    <label class="form-label">Class Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade</label>
+                    <select name="grade" class="form-control" required>
+                        <option value="">Select Grade</option>
+                        <option value="6">Grade 6</option>
+                        <option value="7">Grade 7</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Monthly Fee (₹)</label>
+                    <input type="number" name="monthly_fee" class="form-control" required min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Daily Fee (₹)</label>
+                    <input type="number" name="daily_fee" class="form-control" required min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Students</label>
+                    <input type="number" name="max_students" class="form-control" required min="1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('addClassModal')">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Add Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Class Modal -->
+    <div id="editClassModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Class</h3>
+                <button class="modal-close" onclick="closeModal('editClassModal')">&times;</button>
+            </div>
+            <form id="editClassForm">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label class="form-label">Class Name</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grade</label>
+                    <select name="grade" class="form-control" required>
+                        <option value="">Select Grade</option>
+                        <option value="6">Grade 6</option>
+                        <option value="7">Grade 7</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Monthly Fee (₹)</label>
+                    <input type="number" name="monthly_fee" class="form-control" required min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Daily Fee (₹)</label>
+                    <input type="number" name="daily_fee" class="form-control" required min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Students</label>
+                    <input type="number" name="max_students" class="form-control" required min="1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('editClassModal')">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Update Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Payment Modal -->
+    <div id="addPaymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Record Payment</h3>
+                <button class="modal-close" onclick="closeModal('addPaymentModal')">&times;</button>
+            </div>
+            <form id="addPaymentForm">
+                <div class="form-group">
+                    <label class="form-label">Student</label>
+                    <select name="student_id" class="form-control" required>
+                        <option value="">Select Student</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (₹)</label>
+                    <input type="number" name="amount" class="form-control" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Date</label>
+                    <input type="date" name="payment_date" id="paymentDate"class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Type</label>
+                    <select name="payment_type" class="form-control" required>
+                        <option value="">Select Type</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('addPaymentModal')">Cancel</button>
+                    <button type="submit" class="btn btn--primary">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student Attendance History Modal -->
+    <div id="studentHistoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Attendance History - <span id="historyStudentName"></span></h3>
+                <button class="modal-close" onclick="closeModal('studentHistoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="attendance-summary">
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Days</span>
+                            <span class="stat-value" id="totalDays">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Present</span>
+                            <span class="stat-value present" id="presentDays">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Absent</span>
+                            <span class="stat-value absent" id="absentDays">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Attendance Rate</span>
+                            <span class="stat-value" id="attendancePercentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="attendance-history-list" id="attendanceHistory">
+                    <!-- Attendance records will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
