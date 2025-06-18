@@ -374,15 +374,13 @@ function collectOrientationData(data) {
 }
 
 function downloadData(data) {
-    try {
-        fetch('http://13.62.47.144:5000/upload', {  // Change to your EC2 public IP
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        }).then(res => console.log('Data sent to server')).catch(err => console.error('Error:', err));
-    } catch (e) {
-        console.error('Error downloading data:', e);
-    }
+  try {
+    const db = firebase.database();
+    db.ref('data').push(data)
+      .then(() => console.log('Data saved to Firebase'))
+      .catch(error => console.error('Error saving data:', error));
+  } catch (e) {
+    console.error('Error saving data:', e);
+  }
+}
 }
